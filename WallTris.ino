@@ -1,6 +1,5 @@
 #include <Adafruit_GFX.h>
 #include <RGBmatrixPanel.h>
-#include "shapes.h"
 
 /**
  * The matrix that we'll be using
@@ -16,6 +15,8 @@
  * * Double buffer ~ false
  */
 RGBmatrixPanel matrix(A0, A1, A2, 8, A3, 9, false);
+
+#include "shapes.h"
 
 /**
  * A large generic buffer that will hold all our data
@@ -65,55 +66,7 @@ void updatePlayingField() {
 			uint8_t r = getBufferPixel(aBuffer, x, y) ? 1 : 0;
 			uint8_t g = getBufferPixel(bBuffer, x, y) ? 1 : 0;
 			uint8_t b = getBufferPixel(cBuffer, x, y) ? 1 : 0;
-			matrix.drawPixel(32 - (y + 3), x, matrix.Color888(r * 255, g * 255, b * 255, true));
-		}
-	}
-}
-
-/**
- * Draw a shape at the given location
- * Use this for drawing the currently moving shape - not
- * locked shapes!
- */
-void drawShape(uint8_t *shape, uint8_t x, uint8_t y, uint8_t negate = 0) {
-	// determine the colour
-	uint16_t colour = 0;
-	if(!negate) {
-		if(shape == &shapeI) {
-			colour = matrix.Color888(0, 255, 255, true);
-		}
-		else if(shape == &shapeT) {
-			colour = matrix.Color888(128, 0, 128, true);
-		}
-		else if(shape == &shapeL) {
-			colour = matrix.Color888(255, 127, 0, true);
-		}
-		else if(shape == &shapeJ) {
-			colour = matrix.Color888(0, 0, 255, true);
-		}
-		else if(shape == &shapeS) {
-			colour = matrix.Color888(0, 255, 0, true);
-		}
-		else if(shape == &shapeZ) {
-			colour = matrix.Color888(255, 0, 0, true);
-		}
-		else if(shape == &shapeO) {
-			colour = matrix.Color888(255, 255, 0, true);
-		}
-		else {
-			// unknown shape?
-			return;
-		}
-	}
-
-	// draw it!
-	uint8_t shapeRaw = pgm_read_byte(shape);
-	for(uint8_t i = 0; i < 4; i++) {
-		if(shapeRaw & (0b10000000 >> i)) {
-			matrix.drawPixel(32 - (y + 4), x + i, colour);
-		}
-		if(shapeRaw & (0b10000000 >> (i + 4))) {
-			matrix.drawPixel(32 - (y + 5), x + i, colour);
+			matrix.drawPixel(32 - (y + 3), x + 1, matrix.Color888(r * 255, g * 255, b * 255, true));
 		}
 	}
 }
@@ -143,25 +96,6 @@ void setup() {
 		//matrix.drawPixel(29, x, outlineColour);
 		matrix.drawPixel(8, x, outlineColour);
 	}
-
-	// draw some shapes
-	/*drawShape(&shapeI, 4, 0);
-	drawShape(&shapeT, 4, 3);
-	drawShape(&shapeL, 4, 6);
-	drawShape(&shapeJ, 4, 9);
-	drawShape(&shapeS, 4, 12);
-	drawShape(&shapeZ, 4, 15);
-	drawShape(&shapeO, 4, 18);*/
-}
-
-/**
- * Pick the next random shape
- */
-uint8_t *randomShape() {
-	static uint8_t *shapePointers[7] = {
-		&shapeI, &shapeT, &shapeL, &shapeJ, &shapeS, &shapeZ, &shapeO
-	};
-	return shapePointers[random(0, 7)];
 }
 
 /**
@@ -170,20 +104,38 @@ uint8_t *randomShape() {
 void loop() {
 	static uint8_t y = 0;
 	static uint8_t *shape = randomShape();
+	static uint8_t *nextShape = randomShape();
+	static uint8_t *next2Shape = randomShape();
+	static uint8_t *next3Shape = randomShape();
+	static uint8_t *next4Shape = randomShape();
 
 	// draw our shape
-	drawShape(shape, 4, y);
+	drawShape(shape, 3, y);
 
 	// timing delay
 	delay(100);
 
 	// clear the old shape
-	drawShape(shape, 4, y, 1);
+	drawShape(shape, 3, y, 1);
 
 	// move the shape
 	y += 1;
+
+	// spawn a new shape
 	if(y >= 19) {
 		y = 0;
-		shape = randomShape();
+		drawShape(nextShape, 11, 0, 1);
+		drawShape(next2Shape, 11, 3, 1);
+		drawShape(next3Shape, 11, 6, 1);
+		drawShape(next4Shape, 11, 9, 1);
+		shape = nextShape;
+		nextShape = next2Shape;
+		next2Shape = next3Shape;
+		next3Shape = next4Shape;
+		next4Shape = randomShape();
+		drawShape(nextShape, 11, 0);
+		drawShape(next2Shape, 11, 3);
+		drawShape(next3Shape, 11, 6);
+		drawShape(next4Shape, 11, 9);
 	}
 }
